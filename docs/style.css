@@ -48,6 +48,23 @@ nav .brand {
   margin-right: auto;
 }
 
+.subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  padding: 0.6rem 0;
+  margin: -1rem 0 2rem;
+  font-size: 0.88rem;
+}
+
+.subnav a {
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.subnav a:hover, .subnav a.active { color: var(--accent); }
+
 h1 { font-size: 1.9rem; margin: 0 0 0.5rem; letter-spacing: -0.01em; }
 h2 { font-size: 1.3rem; margin: 2.25rem 0 0.75rem; }
 h3 { font-size: 1.05rem; margin: 1.5rem 0 0.5rem; }

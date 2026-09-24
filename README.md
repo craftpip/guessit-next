@@ -318,8 +318,9 @@ plans/                this project's plans
 ## Documentation
 
 Full guides live in [`docs/`](docs/) — a small static site (no build step,
-open `docs/index.html` in a browser): overview, API reference, CLI/daemon
-protocol, and the parsing guards catalog.
+open `docs/index.html` in a browser, or read it live at
+https://craftpip.github.io/guessit-next/): overview, API reference, properties
+catalog, CLI/daemon protocol, parsing guards, and known limitations.
 
 ## Contributing
 

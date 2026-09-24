@@ -11,30 +11,43 @@
 <nav>
   <span class="brand">guessit-next</span>
   <a href="index.html">Overview</a>
-  <a href="api.html" class="active">API</a>
-  <a href="cli.html">CLI &amp; daemon</a>
-  <a href="guards.html">Guards</a>
+  <a href="docs.html" class="active">Documentation</a>
 </nav>
+<div class="subnav">
+  <a href="api.html" class="active">API reference</a>
+  <a href="properties.html">Properties</a>
+  <a href="cli.html">CLI &amp; daemon</a>
+  <a href="guards.html">Parsing guards</a>
+  <a href="known-limitations.html">Known limitations</a>
+</div>
 
 <h1>API reference</h1>
-<p class="subtitle">Import from <code>'guessit-next'</code> (or <code>./src/index.js</code> in a checkout). Field names are the contract — locked by <code>tests/cli.test.js</code>.</p>
+<p class="subtitle">Four functions sharing one parse core. Import them from <code>'guessit-next'</code> — or from <code>./src/index.js</code> inside a checkout. Every field a function returns is part of the public contract: rename nothing without a migration.</p>
 
 <h2>categorize(name) → CategoryResult</h2>
-<p>Classify one torrent/release/file name into exactly one kind. Kind priority: <code>collection</code> &gt; <code>season_batch</code> &gt; <code>episode_collection</code> &gt; <code>episode</code> &gt; <code>movie</code> &gt; <code>others</code>.</p>
+<p>Answers: <em>what does this one torrent or release name represent?</em> Use it before downloading to decide what a single name stands for. Each name lands in exactly one kind, first match wins: <code>collection</code> &gt; <code>season_batch</code> &gt; <code>episode_collection</code> &gt; <code>episode</code> &gt; <code>movie</code> &gt; <code>others</code>.</p>
+<pre><code>categorize('Show Name S01E01-E13 1080p');
+// → { kind: 'episode_collection', season: 1, episode: 1, episodeEnd: 13, … }
+
+categorize('Show Name S01-S03 1080p');
+// → { kind: 'collection', seasonRange: [1, 3], seasonList: [1, 2, 3], … }</code></pre>
 <table>
   <tr><th>Field</th><th>Meaning</th></tr>
-  <tr><td><code>kind</code></td><td><code>collection | season_batch | episode | episode_collection | movie | others</code></td></tr>
+  <tr><td><code>kind</code></td><td>one of <code>collection | season_batch | episode | episode_collection | movie | others</code></td></tr>
   <tr><td><code>season</code></td><td>the single season the item belongs to (or <code>null</code>)</td></tr>
   <tr><td><code>episode</code></td><td>the (start) episode number (or <code>null</code>)</td></tr>
-  <tr><td><code>episodeEnd</code></td><td>last episode of a range/collection (or <code>null</code>)</td></tr>
-  <tr><td><code>seasonEnd</code></td><td>season of <code>episodeEnd</code> when a range crosses seasons (or <code>null</code>)</td></tr>
+  <tr><td><code>episodeEnd</code></td><td>last episode of a range or collection (or <code>null</code>)</td></tr>
+  <tr><td><code>seasonEnd</code></td><td>season of <code>episodeEnd</code>, only when a range crosses seasons (or <code>null</code>)</td></tr>
   <tr><td><code>seasonRange</code></td><td><code>[min, max]</code> seasons spanned by a multi-season item (or <code>null</code>)</td></tr>
   <tr><td><code>seasonList</code></td><td>explicit sorted list of every season contained (or <code>null</code>)</td></tr>
   <tr><td><code>isCompletePack</code></td><td><code>true</code> for “Complete Series” / “All Seasons” / “… COMPLETE”</td></tr>
 </table>
 
 <h2>extractSE(name) → SE</h2>
-<p>Same parse core as <code>categorize</code>, without the kind decision. Ranges preserved.</p>
+<p>Answers: <em>what season/episode structure does this name carry?</em> Same parse core as <code>categorize</code>, without the kind decision — ranges are preserved, never collapsed.</p>
+<pre><code>extractSE('Show Name S01E01-E13 1080p');
+// → { season: 1, episode: 1, episodeEnd: 13,
+//     seasonEnd: null, seasonRange: null, seasonList: null }</code></pre>
 <table>
   <tr><th>Field</th><th>Meaning</th></tr>
   <tr><td><code>season</code> / <code>episode</code></td><td>start of the structure (or <code>null</code>)</td></tr>
@@ -43,59 +56,77 @@
 </table>
 
 <h2>classifyFile(candidate, opts?) → ClassificationResult</h2>
-<h3>Candidate</h3>
+<p>Answers: <em>where does this one file belong in a media library?</em> It reads the file name <strong>and</strong> its folder names — the folder usually knows the show title even when the file doesn't. It never returns <code>skip</code>: what counts as skippable (low confidence, incomplete downloads, non-media files) is your application's decision.</p>
+<pre><code>classifyFile({
+  name: '10-Conclusion.mkv',
+  source_path: '/data/torrents/Neutral Show/10-Conclusion.mkv',
+  source_root: '/data/torrents',
+  container_path: '/data/torrents/Neutral Show',
+  relative_path: '10-Conclusion.mkv',
+  file_size: 1024,
+});
+// → { type: 'series', title: 'Neutral Show', episode_title: 'Conclusion',
+//     season: null, episode: 10, confidence: 0.9, … }</code></pre>
+<h3>What to pass in</h3>
 <table>
   <tr><th>Field</th><th>Meaning</th></tr>
   <tr><td><code>name</code></td><td>file name, e.g. <code>Show - S01E02.mkv</code></td></tr>
   <tr><td><code>source_path</code></td><td>full path of the file</td></tr>
   <tr><td><code>source_root</code></td><td>scan root the file was found under</td></tr>
-  <tr><td><code>source_root_key</code></td><td>opaque key of the scan root</td></tr>
   <tr><td><code>container_path</code></td><td>containing folder (torrent root), if any</td></tr>
-  <tr><td><code>relative_path</code></td><td>path of the file relative to the container, if any (carries <code>Season 02/…</code> subfolders)</td></tr>
-  <tr><td><code>file_size</code></td><td>size in bytes, if known (sample-size heuristic needs it)</td></tr>
-  <tr><td><code>in_progress</code></td><td>reserved; the classifier ignores it (scanners use it for <code>skip</code>)</td></tr>
+  <tr><td><code>relative_path</code></td><td>path relative to the container, if any (carries <code>Season 02/…</code> subfolders)</td></tr>
+  <tr><td><code>file_size</code></td><td>size in bytes, if known (needed for the sample-size heuristic)</td></tr>
 </table>
 <p><code>opts = { seriesAliases?: Record&lt;string,string&gt; }</code> maps a detected title to its canonical name.</p>
-<h3>Result</h3>
+<h3>What comes back</h3>
 <table>
   <tr><th>Field</th><th>Meaning</th></tr>
   <tr><td><code>type</code></td><td><code>series | movie | extra</code> (never <code>skip</code>)</td></tr>
-  <tr><td><code>title</code></td><td>show/movie title</td></tr>
+  <tr><td><code>title</code></td><td>show or movie title</td></tr>
   <tr><td><code>episode_title</code></td><td>episode title, when derivable (or <code>null</code>)</td></tr>
-  <tr><td><code>series_alias</code></td><td>alternative title, e.g. foreign arc name (or <code>null</code>)</td></tr>
+  <tr><td><code>series_alias</code></td><td>alternative title, e.g. a foreign arc name (or <code>null</code>)</td></tr>
   <tr><td><code>year</code></td><td>release year (or <code>null</code>)</td></tr>
-  <tr><td><code>season</code> / <code>episode</code></td><td>numbers; ranges collapse to the start episode</td></tr>
+  <tr><td><code>season</code> / <code>episode</code></td><td>numbers; a range collapses to its start episode here</td></tr>
   <tr><td><code>episodeEnd</code></td><td>range end for multi-episode files (or <code>null</code>)</td></tr>
-  <tr><td><code>confidence</code></td><td>0–1 confidence</td></tr>
+  <tr><td><code>confidence</code></td><td>0–1, how sure the classifier is</td></tr>
   <tr><td><code>reason</code></td><td>short human-readable reason</td></tr>
   <tr><td><code>extra_type</code></td><td>for <code>extra</code>: <code>sample | trailer | behind | deleted | interview | featurette | short | special | extra</code></td></tr>
 </table>
-<h3>Confidence ladder</h3>
+<h3>How confidence is set</h3>
 <table>
   <tr><th>Evidence</th><th>Type</th><th>Confidence</th><th>Reason</th></tr>
-  <tr><td>explicit episode</td><td><code>series</code></td><td>0.9</td><td>Matched episode/season pattern</td></tr>
-  <tr><td>season only</td><td><code>series</code></td><td>0.8</td><td>Matched season pattern</td></tr>
-  <tr><td>year, no S/E</td><td><code>movie</code></td><td>0.75</td><td>Matched year without season/episode</td></tr>
-  <tr><td>standalone file</td><td><code>movie</code></td><td>0.65</td><td>Defaulted standalone file to movie</td></tr>
-  <tr><td>extra marker</td><td><code>extra</code></td><td>≥ 0.85</td><td>Detected &lt;type&gt; extra/special marker</td></tr>
+  <tr><td>explicit episode marker</td><td><code>series</code></td><td>0.9</td><td>Matched episode/season pattern</td></tr>
+  <tr><td>season marker only</td><td><code>series</code></td><td>0.8</td><td>Matched season pattern</td></tr>
+  <tr><td>year, no season/episode</td><td><code>movie</code></td><td>0.75</td><td>Matched year without season/episode</td></tr>
+  <tr><td>standalone file, nothing else</td><td><code>movie</code></td><td>0.65</td><td>Defaulted standalone file to movie</td></tr>
+  <tr><td>extra marker (sample, trailer, …)</td><td><code>extra</code></td><td>≥ 0.85</td><td>Detected &lt;type&gt; extra/special marker</td></tr>
 </table>
-<div class="note">A small movie-size file with <em>no</em> <code>sample</code> marker stays <code>movie</code> with a “sample-size suspect” reason suffix — the scanner flags it, the file stays editable. Only a real <code>sample</code> marker routes to <code>extra/sample</code>.</div>
+<div class="note">A small movie-size file with <em>no</em> <code>sample</code> marker stays <code>movie</code> with a “sample-size suspect” reason suffix — your app can flag it while the file stays editable. Only a real <code>sample</code> marker routes to <code>extra/sample</code>.</div>
 
 <h2>classifyFiles(candidates, opts?) → { results, groups }</h2>
-<p><code>results</code>: one <code>ClassificationResult</code> per input, in input order. <code>groups</code>: one summary per folder — group key is <code>container_path</code>, or <code>source_path</code> for loose files (each its own group, so unrelated shows never force agreement).</p>
+<p>Answers: <em>what does this whole folder contain, and do its files agree?</em> Use it for one torrent folder or one directory listing. You get one result per input file (same order), plus one summary group per folder: agreed title and type, seasons and episodes inside, file counts, and a <code>consistent</code> flag with <code>conflicts</code> when a file disagrees with its folder. Extras never break agreement. Empty input returns <code>{ results: [], groups: [] }</code>.</p>
+<pre><code>classifyFiles([
+  { name: 'Show Name - S01E01.mkv', container_path: '/data/torrents/Show Pack', … },
+  { name: 'Show Name - S01E02.mkv', container_path: '/data/torrents/Show Pack', … },
+]);
+// → { results: [ …one result per file, in order… ],
+//     groups: [{ key: '/data/torrents/Show Pack', title: 'Show Name',
+//       type: 'series', seasons: [1], episodesBySeason: { 1: [1, 2] },
+//       fileCount: 2, episodeFileCount: 2, extraFileCount: 0,
+//       consistent: true, conflicts: [] }] }</code></pre>
 <table>
   <tr><th>Field</th><th>Meaning</th></tr>
-  <tr><td><code>key</code></td><td>folder path (or lone file path)</td></tr>
+  <tr><td><code>key</code></td><td>folder path (or lone file path for loose files, which each form their own group)</td></tr>
   <tr><td><code>title</code> / <code>type</code></td><td>majority identity across the group's series/movie results</td></tr>
   <tr><td><code>seasons</code></td><td>sorted unique seasons contained</td></tr>
   <tr><td><code>episodesBySeason</code></td><td><code>{ "&lt;season&gt;": [sorted unique episodes] }</code></td></tr>
-  <tr><td><code>fileCount</code> / <code>episodeFileCount</code> / <code>extraFileCount</code></td><td>counts</td></tr>
+  <tr><td><code>fileCount</code> / <code>episodeFileCount</code> / <code>extraFileCount</code></td><td>total files / files with an episode number / files classified as extras</td></tr>
   <tr><td><code>consistent</code></td><td><code>false</code> when a file disagrees with the folder majority</td></tr>
-  <tr><td><code>conflicts</code></td><td>human-readable descriptions of each disagreement</td></tr>
+  <tr><td><code>conflicts</code></td><td>human-readable description of each disagreement</td></tr>
 </table>
-<p>A disagreeing file gets lowered confidence with a conflict reason; extras never break agreement. Empty input returns <code>{ results: [], groups: [] }</code>.</p>
+<p>A disagreeing file keeps its result but gets lowered confidence with a conflict reason, so your app can route it for review.</p>
 
-<footer>guessit-next · ISC · <a href="index.html">Overview</a></footer>
+<footer>guessit-next · ISC · <a href="index.html">Overview</a> · <a href="docs.html">Documentation</a></footer>
 </div>
 </body>
 </html>

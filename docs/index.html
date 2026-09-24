@@ -11,27 +11,25 @@
 <nav>
   <span class="brand">guessit-next</span>
   <a href="index.html" class="active">Overview</a>
-  <a href="api.html">API</a>
-  <a href="cli.html">CLI &amp; daemon</a>
-  <a href="guards.html">Guards</a>
+  <a href="docs.html">Documentation</a>
 </nav>
 
 <h1>guessit-next</h1>
-<p class="subtitle">One implementation of “extract seasons, episodes, title and type from media file names and folder names” — written once, tested once, consumed twice (a Node.js torrent orchestrator in-process, a Python media organizer over stdio).</p>
+<p class="subtitle">A media-name classification engine with wrappers for Node.js and Python. Give it a media file or folder name — it tells you the title, the season and episode numbers, and what kind of release it is. Zero dependencies.</p>
 
-<h2>What it answers</h2>
-<ul>
-  <li><code>Show Name S01E01-E13 1080p</code> → an <strong>episode collection</strong>: season 1, episodes 1–13.</li>
-  <li><code>Show Name (2018) Season 1 - 720p</code> → a <strong>season batch</strong>: season 1 (the <code>- 720p</code> is a resolution, not a range end).</li>
-  <li><code>10-Conclusion.mkv</code> inside <code>Neutral Show/</code> → <strong>series</strong>: title <code>Neutral Show</code>, episode 10, episode title <code>Conclusion</code>.</li>
-  <li>A torrent folder of 12 episodes + an OP → one <strong>group</strong>: title agreed, seasons <code>[1]</code>, episodes <code>{1: [1…12]}</code>.</li>
-</ul>
+<pre><code>categorize('Show Name S01E01-E13 1080p');
+// → { kind: 'episode_collection', season: 1, episode: 1, episodeEnd: 13,
+//     seasonEnd: null, seasonRange: null, seasonList: null,
+//     isCompletePack: false }</code></pre>
 
-<h2>Install &amp; use</h2>
-<p>Requires Node.js ≥ 20. Zero runtime dependencies, pure ESM.</p>
-<pre><code>git clone &lt;repo-url&gt; guessit-next
+<h2>Install</h2>
+<p>Requires Node.js ≥ 20.</p>
+<pre><code>git clone https://github.com/craftpip/guessit-next.git guessit-next
 cd guessit-next
 npm install   # installs nothing extra — no runtime dependencies</code></pre>
+
+<h2>Usage</h2>
+<p>From Node.js — import it in-process:</p>
 <pre><code>import { categorize, classifyFile, classifyFiles, extractSE } from 'guessit-next';
 
 categorize('Show Name S01E01-E13 1080p');
@@ -39,22 +37,38 @@ categorize('Show Name S01E01-E13 1080p');
 
 classifyFile({ name: 'Show - S01E02.mkv', source_path: '/data/downloads/Show - S01E02.mkv',
   source_root: '/data/downloads', container_path: null, relative_path: null,
-  file_size: null, in_progress: false });
+  file_size: null });
 // → { type: 'series', season: 1, episode: 2, confidence: 0.9, … }</code></pre>
+<p>From Python — talk to the stdio daemon over JSON-lines (one process handles a whole batch, no per-file startup cost):</p>
+<pre><code>import json, subprocess
 
-<h2>Four functions</h2>
-<table>
-  <tr><th>Function</th><th>Question it answers</th></tr>
-  <tr><td><code>categorize(name)</code></td><td>What does one torrent/release name represent? (download decisions)</td></tr>
-  <tr><td><code>extractSE(name)</code></td><td>What season/episode structure does this name carry? (ranges preserved)</td></tr>
-  <tr><td><code>classifyFile(candidate)</code></td><td>Where does one file belong in a library?</td></tr>
-  <tr><td><code>classifyFiles(candidates)</code></td><td>What does this whole folder contain, and do its files agree?</td></tr>
-</table>
-<p>Details: <a href="api.html">API reference</a>. Shell/daemon usage: <a href="cli.html">CLI &amp; daemon</a>. Parsing rules: <a href="guards.html">guards catalog</a>.</p>
+daemon = subprocess.Popen(['node', 'bin/index.js', '--serve', '--json'],
+                          stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+daemon.stdin.write(json.dumps({"op": "categorize", "name": "Show Name S01-S03 1080p"}) + "\n")
+daemon.stdin.flush()
+print(json.loads(daemon.stdout.readline()))
+# → {"kind": "collection", "seasonRange": [1, 3], "seasonList": [1, 2, 3], …}</code></pre>
+<p>From the shell — spot-check a name or pipe a batch:</p>
+<pre><code>node bin/index.js --json "Show Name S01E01.mkv"
+echo '{"op":"categorize","name":"Show Name S01-S03 1080p"}' | node bin/index.js --batch</code></pre>
 
-<div class="note">Two vocabularies, one core. Torrent kinds (<code>collection | season_batch | episode | episode_collection | movie | others</code>) and file types (<code>series | movie | extra | skip</code>) are different views of the same parse core. <code>skip</code> is scanner-side — the classifier never emits it.</div>
+<h2>What it is for</h2>
+<ul>
+  <li><strong>Download apps</strong> — decide what a release name represents before fetching it: a full collection, a season batch, episodes, a movie, or something unrecognized.</li>
+  <li><strong>Media libraries</strong> — sort files into shows and movies using the file name <em>and</em> its folder names together, with season/episode numbers and a confidence score per file.</li>
+  <li><strong>Whole folders</strong> — check a full folder at once and get a per-folder summary, with a flag when one file disagrees with the rest.</li>
+</ul>
+<p>Two vocabularies, one core. Release kinds (<code>collection | season_batch | episode | episode_collection | movie | others</code>) and file types (<code>series | movie | extra</code>) are different views of the same parse core. Your app decides what to skip — the classifier never emits <code>skip</code>.</p>
 
-<footer>guessit-next · ISC · tests first, always (<code>npm test</code>)</footer>
+<h2>Support</h2>
+<p>Found a name that parses wrong? Open an issue at <a href="https://github.com/craftpip/guessit-next/issues">github.com/craftpip/guessit-next</a> with the <strong>obfuscated</strong> name (same tokens, fake title — never paste real release groups). Cases the parser deliberately does not resolve are listed under <a href="known-limitations.html">Known limitations</a>.</p>
+
+<h2>License</h2>
+<p>ISC.</p>
+
+<div class="note">Building with it? The code documentation lives under <a href="docs.html">Documentation</a>: API reference, properties catalog, CLI &amp; daemon protocol, parsing guards, known limitations.</div>
+
+<footer>guessit-next · ISC · <a href="docs.html">Documentation</a></footer>
 </div>
 </body>
 </html>

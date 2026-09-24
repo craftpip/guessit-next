@@ -11,53 +11,58 @@
 <nav>
   <span class="brand">guessit-next</span>
   <a href="index.html">Overview</a>
-  <a href="api.html">API</a>
-  <a href="cli.html">CLI &amp; daemon</a>
-  <a href="guards.html" class="active">Guards</a>
+  <a href="docs.html" class="active">Documentation</a>
 </nav>
+<div class="subnav">
+  <a href="api.html">API reference</a>
+  <a href="properties.html">Properties</a>
+  <a href="cli.html">CLI &amp; daemon</a>
+  <a href="guards.html" class="active">Parsing guards</a>
+  <a href="known-limitations.html">Known limitations</a>
+</div>
 
 <h1>Parsing guards</h1>
-<p class="subtitle">Locked in by the test registries — these are features, not accidents. If a regex or S/E rule exists in more than one place, that's a bug: it belongs in <code>src/patterns.js</code> or <code>src/se.js</code>.</p>
+<p class="subtitle">Release names are full of traps: numbers that look like episodes but are resolutions, codecs that look like season markers, words that mean two things. These are the rules that keep the parser honest. Each one is locked in by a test — they are features, not accidents.</p>
 
-<h2>Caps and years</h2>
+<h2>Big numbers are years or resolutions, never seasons</h2>
 <ul>
-  <li>Seasons are 1–60, episodes 1–500. Four-digit values are years or resolutions and never become season/episode numbers.</li>
-  <li><code>S02 - 2019</code> is a season batch (season 2 kept, episode dropped) — never a <code>[2, 2019]</code> collection.</li>
-  <li><code>Season 1 - 720p</code> is a season batch — never <code>[1, 720]</code>.</li>
-  <li>A year in parens (<code>Show - 01 (2021)</code>) is the release year, never Season 2021.</li>
+  <li>Seasons run 1–60, episodes 1–500. A 4-digit number is a year or a resolution and never becomes a season/episode number.</li>
+  <li><code>S02 - 2019</code> → season 2 (the <code>2019</code> is a year, not episode 2019). It is never read as a <code>[2, 2019]</code> collection.</li>
+  <li><code>Season 1 - 720p</code> → season 1 (the <code>720p</code> is a resolution, not a range end). It is never read as seasons <code>[1, 720]</code>.</li>
+  <li>A year in parens — <code>Show - 01 (2021)</code> — is the release year, never “season 2021”.</li>
 </ul>
 
 <h2>Codecs are not episodes</h2>
 <ul>
-  <li>x-notation <code>1x05</code> requires season ≤ 60 (kills <code>1920x1080</code>) and episode ≠ 264/265 (kills <code>1 x264</code> codec tails).</li>
-  <li>Codec decimals (<code>Opus 2.0</code>, <code>DDP2.0</code>) are never decimal episodes; <code>2.5 Title…</code> never yields a bare-episode <code>5</code>.</li>
-  <li>Underscore-digit codes (<code>RIFT_2045</code>) never steal the episode — the real <code>S01E10</code> wins.</li>
+  <li><code>1x05</code> means season 1, episode 5 — but <code>1920x1080</code> is a resolution (season must be ≤ 60), and <code>1 x264</code> is a codec (episodes 264/265 are excluded from x-notation).</li>
+  <li>Codec decimals are never episodes: <code>Opus 2.0</code> and <code>DDP2.0</code> stay codecs, and <code>2.5 Title…</code> never yields an episode <code>5</code>.</li>
+  <li>Digit-codes like <code>RIFT_2045</code> never steal the episode — the real <code>S01E10</code> in the name wins.</li>
 </ul>
 
 <h2>Anime conventions</h2>
 <ul>
-  <li>Finale <code>S2 - 12 END</code> is S02E12 (an episode), never a season range.</li>
-  <li><code>Part N - &lt;num&gt;</code> with a season anchor is an episode designator; a bare <code>Part N</code> (no dash-number) is a part pack.</li>
-  <li><code>Final Season - 08</code> (no “Part”, no episode word) is episode 8 with unnamed season.</li>
-  <li><code>S01 1-2</code> means S01E01–S01E02 (episode collection), not a season batch.</li>
+  <li>A finale written <code>S2 - 12 END</code> is season 2, episode 12 — never a season range.</li>
+  <li><code>Part N - &lt;num&gt;</code> next to a season marker names an episode; a bare <code>Part N</code> with no dash-number is a part pack.</li>
+  <li><code>Final Season - 08</code> (no “Part”, no episode word) is episode 8 with an unnamed season.</li>
+  <li><code>S01 1-2</code> means episodes 1–2 of season 1 (an episode collection), not a season batch.</li>
 </ul>
 
 <h2>“Complete” handling</h2>
 <ul>
-  <li>A bare <code>complete</code> with no season/movie signals is a complete pack.</li>
+  <li>A bare <code>complete</code> with no season or movie signals is a complete pack.</li>
   <li><code>Season 3 Complete</code> stays a season batch; a year + release-quality movie with “complete” in its title stays a movie.</li>
-  <li>Complete-collection folders (<code>… Season 1-2 S01-S02 …</code>) are stripped: inner files keep the short show title, never the long collection string.</li>
+  <li>Collection folders (<code>… Season 1-2 S01-S02 …</code>) don't leak into titles: inner files keep the short show title, never the long collection string.</li>
 </ul>
 
-<h2>Library files</h2>
+<h2>The folder knows best</h2>
 <ul>
-  <li>The folder is authoritative for series identity: <code>10-Conclusion.mkv</code> inside <code>Neutral Show/</code> takes the folder's title — while <code>3 Fools (2009).mkv</code> inside its own folder keeps its leading number as part of the movie title.</li>
+  <li>For library files, the folder is authoritative for identity: <code>10-Conclusion.mkv</code> inside <code>Neutral Show/</code> takes the folder's title — while <code>3 Fools (2009).mkv</code> inside its own folder keeps its leading number as part of the movie title.</li>
   <li>Ranges collapse to the start episode for routing (<code>S01E01-E13</code> → episode 1), with the end preserved in <code>episodeEnd</code>.</li>
-  <li>Marker-named samples route to <code>extra/sample</code>; small size alone only appends a “sample-size suspect” note to a movie.</li>
-  <li>Extra markers use underscore-tolerant boundaries (<code>NCED_DVD</code>, <code>file_sample</code> hit) but never fire inside words (<code>spider</code>, <code>space</code>).</li>
+  <li>Only a real <code>sample</code> marker routes to <code>extra/sample</code>; small file size alone just appends a “sample-size suspect” note to a movie.</li>
+  <li>Extra markers match across underscores (<code>NCED_DVD</code>, <code>file_sample</code>) but never fire inside ordinary words (<code>spider</code>, <code>space</code>).</li>
 </ul>
 
-<footer>guessit-next · ISC · <a href="index.html">Overview</a></footer>
+<footer>guessit-next · ISC · <a href="index.html">Overview</a> · <a href="docs.html">Documentation</a></footer>
 </div>
 </body>
 </html>

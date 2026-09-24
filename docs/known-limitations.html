@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Known limitations — guessit-next</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <span class="brand">guessit-next</span>
+  <a href="index.html">Overview</a>
+  <a href="docs.html" class="active">Documentation</a>
+</nav>
+<div class="subnav">
+  <a href="api.html">API reference</a>
+  <a href="properties.html">Properties</a>
+  <a href="cli.html">CLI &amp; daemon</a>
+  <a href="guards.html">Parsing guards</a>
+  <a href="known-limitations.html" class="active">Known limitations</a>
+</div>
+
+<h1>Known limitations</h1>
+<p class="subtitle">The parser works from the name alone — no catalogue, no network lookup, no per-title knowledge. Some name shapes are genuinely ambiguous to a name-only parser. These cases are documented deliberately: what happens, why, and how to work around it.</p>
+
+<h2>A yearless “complete” film reads as a complete pack</h2>
+<p><code>Movie Title COMPLETE 1080p</code> (no year) → complete pack. “Complete” marks two unrelated things — a full series run and a full movie disc — and the only local signal separating them is the year: a series run spanning years carries none, a film carries its own.</p>
+<p><strong>Workaround:</strong> include the year (<code>Movie Title (2020) COMPLETE 1080p</code> stays a movie).</p>
+
+<h2>A bare number with no marker is a guess</h2>
+<p><code>Show Name - 720</code> is simultaneously a plausible resolution (<code>720p</code>), an absolute episode (<code>720</code>), and a season/episode split (<code>7x20</code>). The parser picks one; it cannot be right for every release because the name itself doesn't say which was meant.</p>
+<p><strong>Workaround:</strong> add the missing token — the <code>p</code> (<code>720p</code>), or an explicit marker (<code>E720</code>, <code>S07E20</code>).</p>
+
+<h2>The folder majority wins</h2>
+<p>When a file disagrees with the folder around it, the folder's identity wins and the file is flagged with <code>consistent: false</code> plus a conflict note (see <code>classifyFiles</code>). A mistitled file inside a correctly-named folder will therefore not pull the folder off course — but a correctly-titled file inside a wrong folder gets flagged too.</p>
+<p><strong>Workaround:</strong> treat conflicts as a review queue in your app rather than as errors.</p>
+
+<h2>Unknown tokens fall through</h2>
+<p>The parser knows a fixed set of patterns: resolutions, codecs, markers, season/episode shapes. A brand-new release tag it has never seen either lands in the title or leaves the name as <code>others</code>. It has no catalogue to learn from, so genuinely novel tokens need a human to teach it.</p>
+<p><strong>Workaround:</strong> open an issue with the obfuscated name (same tokens, fake title) so the pattern set can grow.</p>
+
+<h2>Titles are cleaned, never corrected</h2>
+<p>Separators become spaces and casing is normalized, but the words are never rewritten: a typo, an abbreviation, or a missing apostrophe in the filename stays in the returned title. Fixing spelling needs a real title database, which the parser deliberately does not call.</p>
+<p><strong>Workaround:</strong> match the returned title against your own library or a metadata source downstream.</p>
+
+<h2>Multi-episode files route by their first episode</h2>
+<p><code>classifyFile</code> collapses <code>S01E01-E13</code> to episode 1 for routing (one file, one slot), keeping 13 in <code>episodeEnd</code>. If your app needs the file listed under every episode it contains, expand the range yourself from <code>episode</code> + <code>episodeEnd</code>.</p>
+
+<footer>guessit-next · ISC · <a href="index.html">Overview</a> · <a href="docs.html">Documentation</a></footer>
+</div>
+</body>
+</html>

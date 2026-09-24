@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Documentation — guessit-next</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <span class="brand">guessit-next</span>
+  <a href="index.html">Overview</a>
+  <a href="docs.html" class="active">Documentation</a>
+</nav>
+
+<h1>Documentation</h1>
+<p class="subtitle">Code documentation for developers building with guessit-next — not an end-user guide. If you just want to know what the project does, start at <a href="index.html">Overview</a>.</p>
+
+<h2>Contents</h2>
+<ul>
+  <li><a href="api.html">API reference</a> — the four functions (<code>categorize</code>, <code>extractSE</code>, <code>classifyFile</code>, <code>classifyFiles</code>), what each one answers, and every field it returns.</li>
+  <li><a href="properties.html">Properties</a> — what each returned value means, with a producing name: release kinds, file types, extra types, ranges.</li>
+  <li><a href="cli.html">CLI &amp; daemon</a> — the <code>bin/index.js</code> binary: one-shot checks, <code>--batch</code> mode, and the <code>--serve</code> stdio daemon for Python apps.</li>
+  <li><a href="guards.html">Parsing guards</a> — the parsing rules catalog: number caps, codec traps, anime conventions, “complete” handling, folder authority. Each rule is locked in by a test.</li>
+  <li><a href="known-limitations.html">Known limitations</a> — name shapes a name-only parser cannot resolve, with workarounds.</li>
+</ul>
+
+<div class="note">Returned field names are the public contract your app programs against. They are locked by <code>tests/cli.test.js</code> — any change to these bytes is a breaking change.</div>
+
+<footer>guessit-next · ISC · <a href="index.html">Overview</a></footer>
+</div>
+</body>
+</html>

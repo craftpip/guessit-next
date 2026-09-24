@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Properties — guessit-next</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <span class="brand">guessit-next</span>
+  <a href="index.html">Overview</a>
+  <a href="docs.html" class="active">Documentation</a>
+</nav>
+<div class="subnav">
+  <a href="api.html">API reference</a>
+  <a href="properties.html" class="active">Properties</a>
+  <a href="cli.html">CLI &amp; daemon</a>
+  <a href="guards.html">Parsing guards</a>
+  <a href="known-limitations.html">Known limitations</a>
+</div>
+
+<h1>Properties</h1>
+<p class="subtitle">Every value the engine can return, what it means, and a name that produces it. Field shapes are defined in the <a href="api.html">API reference</a> — this page explains the vocabulary.</p>
+
+<h2>Release kinds</h2>
+<p>Returned as <code>kind</code> by <code>categorize</code>. Each name lands in exactly one kind.</p>
+<ul>
+  <li><strong>collection</strong> — several seasons at once. <code>Show Name S01-S03 1080p</code> → seasons 1–3, <code>seasonList: [1, 2, 3]</code>.</li>
+  <li><strong>season_batch</strong> — one whole season. <code>Show Name (2018) Season 1 - 720p</code> → season 1 (the <code>- 720p</code> is a resolution, not a range).</li>
+  <li><strong>episode</strong> — a single episode. <code>Show Name S01E01 1080p</code> → season 1, episode 1.</li>
+  <li><strong>episode_collection</strong> — several episodes of one season. <code>Show Name S01E01-E13 1080p</code> → season 1, episodes 1–13.</li>
+  <li><strong>movie</strong> — a film, recognized by year without season/episode markers. <code>Movie Title (2020) 1080p</code> → year 2020.</li>
+  <li><strong>others</strong> — nothing recognizable (featurettes, packs of extras, unparsable names). Carries no season/episode numbers.</li>
+</ul>
+
+<h2>File types</h2>
+<p>Returned as <code>type</code> by <code>classifyFile</code>.</p>
+<ul>
+  <li><strong>series</strong> — belongs to a show. <code>Show - S01E02.mkv</code> → season 1, episode 2, confidence 0.9.</li>
+  <li><strong>movie</strong> — belongs to a film. <code>Movie Title (2020).mkv</code> → year 2020, confidence 0.75.</li>
+  <li><strong>extra</strong> — supporting material, never the main content: <code>sample | trailer | behind | deleted | interview | featurette | short | special | extra</code> (in <code>extra_type</code>). <code>Show - Trailer.mkv</code> → <code>extra/trailer</code>.</li>
+</ul>
+<div class="note">There is no <code>skip</code> type. Low-confidence files, incomplete downloads, and non-media are your application's call — the classifier only ever says what a name looks like.</div>
+
+<h2>Ranges, always preserved where it matters</h2>
+<ul>
+  <li><code>episodeEnd</code> — last episode of a range (<code>S01E01-E13</code> → episode 1, <code>episodeEnd</code> 13).</li>
+  <li><code>seasonRange</code> / <code>seasonList</code> — seasons spanned by a multi-season item (<code>S01-S03</code> → <code>[1, 3]</code> / <code>[1, 2, 3]</code>).</li>
+  <li><code>seasonEnd</code> — only when one range crosses seasons.</li>
+  <li><code>isCompletePack</code> — <code>true</code> for “Complete Series” / “All Seasons” / “… COMPLETE”.</li>
+  <li>For file routing, <code>classifyFile</code> collapses a range to its start episode (a 13-episode file still sorts under episode 1) while keeping the end in <code>episodeEnd</code>.</li>
+</ul>
+
+<footer>guessit-next · ISC · <a href="index.html">Overview</a> · <a href="docs.html">Documentation</a></footer>
+</div>
+</body>
+</html>
