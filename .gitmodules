@@ -1,0 +1,4 @@
+[submodule "scratch"]
+	path = scratch
+	url = https://github.com/craftpip/guessit-next-tests.git
+	branch = main
