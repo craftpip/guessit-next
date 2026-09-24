@@ -1,0 +1,20 @@
+{
+  "name": "guessit-next",
+  "version": "0.1.0",
+  "description": "Centralized media-name classification engine (shared by jellyjake and jellysort)",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "bin": {
+    "guessit-next": "bin/index.js"
+  },
+  "scripts": {
+    "test": "node --test tests/"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "ISC"
+}

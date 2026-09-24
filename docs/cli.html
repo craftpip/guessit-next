@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CLI &amp; daemon — guessit-next</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <span class="brand">guessit-next</span>
+  <a href="index.html">Overview</a>
+  <a href="api.html">API</a>
+  <a href="cli.html" class="active">CLI &amp; daemon</a>
+  <a href="guards.html">Guards</a>
+</nav>
+
+<h1>CLI &amp; daemon</h1>
+<p class="subtitle">One binary (<code>bin/index.js</code>) for spot-checks, batch jobs, and the Python consumer's stdio daemon.</p>
+
+<h2>One-shot modes</h2>
+<pre><code># One torrent name → categorize JSON
+node bin/index.js --json "Show Name S01E01.mkv"
+# → {"kind":"episode","season":1,"episode":1,"episodeEnd":null,…}
+
+# One library file → classifyFile JSON (parent folders participate)
+node bin/index.js --json-file "/data/torrents/Neutral Show/10-Conclusion.mkv" --root /data/torrents
+# → {"type":"series","title":"Neutral Show","episode":10,…}</code></pre>
+
+<h2>--batch: JSON-lines in, JSON-lines out</h2>
+<p>Stdin: one <code>{ op, … }</code> object per line. Stdout: one result object per line, same order.</p>
+<pre><code>echo '{"op":"categorize","name":"Show Name S01-S03 1080p"}' | node bin/index.js --batch
+# → {"kind":"collection","seasonRange":[1,3],"seasonList":[1,2,3],…}</code></pre>
+
+<h3>Ops</h3>
+<table>
+  <tr><th>Op</th><th>Input fields</th><th>Runs</th></tr>
+  <tr><td><code>categorize</code></td><td><code>name</code></td><td><code>categorize(name)</code></td></tr>
+  <tr><td><code>classifyFile</code></td><td><code>candidate</code>, <code>seriesAliases?</code></td><td><code>classifyFile(candidate, { seriesAliases })</code></td></tr>
+  <tr><td><code>classifyFiles</code></td><td><code>candidates</code>, <code>seriesAliases?</code></td><td><code>classifyFiles(candidates, { seriesAliases })</code></td></tr>
+</table>
+
+<h2>--serve: stdio daemon</h2>
+<pre><code>node bin/index.js --serve --json</code></pre>
+<p>Same ops as <code>--batch</code>, looped until stdin EOF. The Python consumer spawns one daemon per scan and speaks JSON-lines over the pipe — no per-file process startup cost. <code>--json</code> is accepted for symmetry; output is always JSON.</p>
+
+<footer>guessit-next · ISC · <a href="index.html">Overview</a></footer>
+</div>
+</body>
+</html>

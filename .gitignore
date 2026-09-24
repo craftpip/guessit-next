@@ -1,0 +1,8 @@
+# Private raw corpus — user's personal property, never committed.
+# The folders stay (via .keep) so harvest tooling has a stable workspace;
+# everything else under scratch/ is local-only.
+scratch/*
+!scratch/.keep
+!scratch/raw/
+scratch/raw/*
+!scratch/raw/.keep

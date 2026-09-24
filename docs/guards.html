@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parsing guards — guessit-next</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <span class="brand">guessit-next</span>
+  <a href="index.html">Overview</a>
+  <a href="api.html">API</a>
+  <a href="cli.html">CLI &amp; daemon</a>
+  <a href="guards.html" class="active">Guards</a>
+</nav>
+
+<h1>Parsing guards</h1>
+<p class="subtitle">Locked in by the test registries — these are features, not accidents. If a regex or S/E rule exists in more than one place, that's a bug: it belongs in <code>src/patterns.js</code> or <code>src/se.js</code>.</p>
+
+<h2>Caps and years</h2>
+<ul>
+  <li>Seasons are 1–60, episodes 1–500. Four-digit values are years or resolutions and never become season/episode numbers.</li>
+  <li><code>S02 - 2019</code> is a season batch (season 2 kept, episode dropped) — never a <code>[2, 2019]</code> collection.</li>
+  <li><code>Season 1 - 720p</code> is a season batch — never <code>[1, 720]</code>.</li>
+  <li>A year in parens (<code>Show - 01 (2021)</code>) is the release year, never Season 2021.</li>
+</ul>
+
+<h2>Codecs are not episodes</h2>
+<ul>
+  <li>x-notation <code>1x05</code> requires season ≤ 60 (kills <code>1920x1080</code>) and episode ≠ 264/265 (kills <code>1 x264</code> codec tails).</li>
+  <li>Codec decimals (<code>Opus 2.0</code>, <code>DDP2.0</code>) are never decimal episodes; <code>2.5 Title…</code> never yields a bare-episode <code>5</code>.</li>
+  <li>Underscore-digit codes (<code>RIFT_2045</code>) never steal the episode — the real <code>S01E10</code> wins.</li>
+</ul>
+
+<h2>Anime conventions</h2>
+<ul>
+  <li>Finale <code>S2 - 12 END</code> is S02E12 (an episode), never a season range.</li>
+  <li><code>Part N - &lt;num&gt;</code> with a season anchor is an episode designator; a bare <code>Part N</code> (no dash-number) is a part pack.</li>
+  <li><code>Final Season - 08</code> (no “Part”, no episode word) is episode 8 with unnamed season.</li>
+  <li><code>S01 1-2</code> means S01E01–S01E02 (episode collection), not a season batch.</li>
+</ul>
+
+<h2>“Complete” handling</h2>
+<ul>
+  <li>A bare <code>complete</code> with no season/movie signals is a complete pack.</li>
+  <li><code>Season 3 Complete</code> stays a season batch; a year + release-quality movie with “complete” in its title stays a movie.</li>
+  <li>Complete-collection folders (<code>… Season 1-2 S01-S02 …</code>) are stripped: inner files keep the short show title, never the long collection string.</li>
+</ul>
+
+<h2>Library files</h2>
+<ul>
+  <li>The folder is authoritative for series identity: <code>10-Conclusion.mkv</code> inside <code>Neutral Show/</code> takes the folder's title — while <code>3 Fools (2009).mkv</code> inside its own folder keeps its leading number as part of the movie title.</li>
+  <li>Ranges collapse to the start episode for routing (<code>S01E01-E13</code> → episode 1), with the end preserved in <code>episodeEnd</code>.</li>
+  <li>Marker-named samples route to <code>extra/sample</code>; small size alone only appends a “sample-size suspect” note to a movie.</li>
+  <li>Extra markers use underscore-tolerant boundaries (<code>NCED_DVD</code>, <code>file_sample</code> hit) but never fire inside words (<code>spider</code>, <code>space</code>).</li>
+</ul>
+
+<footer>guessit-next · ISC · <a href="index.html">Overview</a></footer>
+</div>
+</body>
+</html>
