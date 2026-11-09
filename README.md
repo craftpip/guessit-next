@@ -64,6 +64,17 @@ To use it as a library from another Node.js project:
 import { categorize, classifyFile, classifyFiles, extractSE } from 'guessit-next';
 ```
 
+To use it from Python, use the shipped wrapper (`clients/python/`, stdlib
+only — it spawns the stdio daemon for you):
+
+```python
+from guessit_next import GuessitNext, make_candidate
+
+with GuessitNext() as g:
+    g.categorize('Show Name S01E01.mkv')
+    g.classify_file(make_candidate('Show - S01E02.mkv'))
+```
+
 ## Usage
 
 ### Node.js API
@@ -129,7 +140,7 @@ echo '{"op":"categorize","name":"Show Name S01-S03 1080p"}' | node bin/index.js 
 node bin/index.js --serve --json
 ```
 
-Batch/serve ops: `{ op: "categorize", name }`,
+Batch/serve ops: `{ op: "categorize", name }`, `{ op: "extractSE", name }`,
 `{ op: "classifyFile", candidate }`,
 `{ op: "classifyFiles", candidates }`.
 ```
@@ -244,6 +255,7 @@ accidents:
 
 ```bash
 npm test            # node --test tests/ — full suite, zero test dependencies
+cd clients/python && python3 -m unittest discover -s tests -t .   # Python side
 ```
 
 - `tests/categorize.test.js` — the canonical categorization registry
@@ -281,6 +293,7 @@ src/
   titles.js           title extraction from file + folder names
   index.js            public API: categorize, classifyFile, extractSE
 bin/index.js          CLI: --json <name> | --batch | --serve (stdio JSON-lines)
+clients/python/       shipped Python wrapper + daemon tests (stdlib only)
 scratch/corpus.json   user-maintained regression corpus (never committed)
 tests/                categorize, se, classifyFile, cli (JSON contract)
 plans/                this project's plans

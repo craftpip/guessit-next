@@ -61,7 +61,7 @@ describe('field contract — exact key sets', () => {
       in_progress: false,
     });
     assert.deepEqual(keysOf(r), [
-      'confidence', 'episode', 'episode_title', 'episodeEnd', 'extra_type',
+      'confidence', 'episode', 'episodeEnd', 'episode_title', 'extra_type',
       'reason', 'season', 'series_alias', 'title', 'type', 'year',
     ]);
   });
@@ -114,6 +114,7 @@ describe('bin/index.js — CLI surface', () => {
   it('--batch answers one JSON result per input line', () => {
     const input = [
       JSON.stringify({ op: 'categorize', name: 'Show Name S01-S03 1080p' }),
+      JSON.stringify({ op: 'extractSE', name: 'Show S01E01-E13 1080p' }),
       JSON.stringify({
         op: 'classifyFile',
         candidate: {
@@ -132,9 +133,10 @@ describe('bin/index.js — CLI surface', () => {
     const p = spawnSync('node', [BIN, '--batch'], { input, encoding: 'utf8' });
     assert.equal(p.status, 0, `stderr: ${p.stderr}`);
     const lines = p.stdout.trim().split('\n').map((l) => JSON.parse(l));
-    assert.equal(lines.length, 2);
+    assert.equal(lines.length, 3);
     assert.equal(lines[0].kind, 'collection');
-    assert.equal(lines[1].type, 'movie');
+    assert.equal(lines[1].episodeEnd, 13);
+    assert.equal(lines[2].type, 'movie');
   });
 
   it('--serve answers ops until EOF', async () => {

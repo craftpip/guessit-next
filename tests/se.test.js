@@ -36,7 +36,13 @@ const SE_CASES = [
   { name: 'Show Season 1 Episode 5 1080p', expect: { season: 1, episode: 5 } },
   { name: 'Show Season 1 Ep 3', expect: { season: 1, episode: 3 } },
   { name: 'Show S2 - 02', expect: { season: 2, episode: 2 } },
-  { name: 'Show Name Season 02 - 12', expect: { season: 2, episode: 12 } },
+  // "Season 02 - 12" is INDISTINGUISHABLE from "Season 1 - 3" (locked above
+  // as a collection), so the structure layer reads a season range here —
+  // exactly like categorize does. The EPISODE reading of this shape lives
+  // one layer down: extractPair (and therefore classifyFile) pins
+  // series S02E12 for it — see the word-dash gene in classifyFile.test.js.
+  // Same split as upstream; do not "fix" one side without the other.
+  { name: 'Show Name Season 02 - 12', expect: { seasonRange: [2, 12], seasonList: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] } },
   { name: 'Show - S03E02v2', expect: { season: 3, episode: 2 } },
   { name: 'Show - S03E10v3', expect: { season: 3, episode: 10 } },
   { name: 'Show E05 720p', expect: { episode: 5 } },

@@ -234,7 +234,7 @@ describe('classifyFile — movies', () => {
       },
     ));
     assert.equal(r.type, 'series');
-    assert.equal(r.title, '2.5 Crumpled Staircase (2021)');
+    assert.equal(r.title, '2.5 Crumpled Staircase');
     assert.equal(r.season, 1);
     assert.equal(r.episode, 1);
     assert.equal(r.episode_title, null);
@@ -265,6 +265,14 @@ describe('classifyFile — extras', () => {
   it('NCED / NCOP are extra', () => {
     assert.equal(classifyFile(_candidate('NCED.mkv')).type, 'extra');
     assert.equal(classifyFile(_candidate('NCOP.mkv')).type, 'extra');
+  });
+
+  it('versioned OP/ED/NCOP/NCED (OPv2, NCEDv3) are extra, not movie', () => {
+    for (const name of ['OPv2.mkv', 'EDv2.mkv', 'NCOPv3.mkv', 'NCEDv2.mkv']) {
+      const r = classifyFile(_candidate(name));
+      assert.equal(r.type, 'extra', `${name} should be extra, got ${r.type} (${r.reason})`);
+      assert.equal(r.extra_type, 'special', name);
+    }
   });
 
   it('OVA in subfolder is extra', () => {
@@ -372,7 +380,81 @@ describe('classifyFile — titles and aliases', () => {
       relative_path: '[RlsGrp] Alley Cat - S01E01.mkv',
     }));
     assert.equal(r.type, 'series');
-    assert.equal(r.title, 'Alley Cat of the Dunes (Roaming Star)');
+    assert.equal(r.title, 'Alley Cat of the Dunes');
+    assert.equal(r.series_alias, 'Roaming Star');
+  });
+
+  it('anime JP-title (EN-title) folder splits into title + series_alias', () => {
+    const r = classifyFile(_candidate('[RlsGrp] Lamprey Crown - S02E01v2.mkv', {
+      container_path: '/media1/downloads/[RlsGrp] Lamprey Crown Monogatari (Rotate Seagull) (Season 02) [1080p][HEVC x265 10bit][Dual-Audio][Multi-Subs]',
+      relative_path: '[RlsGrp] Lamprey Crown - S02E01v2.mkv',
+    }));
+    assert.equal(r.type, 'series');
+    assert.equal(r.title, 'Lamprey Crown Monogatari');
+    assert.equal(r.series_alias, 'Rotate Seagull');
+    assert.equal(r.season, 2);
+    assert.equal(r.episode, 1);
+  });
+
+  it('anime JP-title (EN-title) folder splits regardless of file short name', () => {
+    const r = classifyFile(_candidate('[RlsGrp] Kestrel Fogbank - S01E01v2.mkv', {
+      container_path: '/media1/downloads/[RlsGrp] Kazoo Swallow ni Watashi no Kawaii ga Tsuujinai (Kestrel Fogbank Is Impervious to My Charms) (Season 01) [1080p][HEVC x265 10bit][Dual-Audio][Multi-Subs]',
+      relative_path: '[RlsGrp] Kestrel Fogbank - S01E01v2.mkv',
+    }));
+    assert.equal(r.type, 'series');
+    assert.equal(r.title, 'Kazoo Swallow ni Watashi no Kawaii ga Tsuujinai');
+    assert.equal(r.series_alias, 'Kestrel Fogbank Is Impervious to My Charms');
+  });
+
+  it('folder-derived series title drops the trailing paren year', () => {
+    const r = classifyFile(_candidate('[RlsGrp] 2.5 Crumpled Staircase (2021) - S01E01.mkv', {
+      container_path: '/data/downloads/[RlsGrp] 2.5 Crumpled Staircase (2021) S01 1080p WEBRip HEVC x265 10bit Dual Audio AAC-RlsGrp',
+      relative_path: '[RlsGrp] 2.5 Crumpled Staircase (2021) - S01E01.mkv',
+    }));
+    assert.equal(r.type, 'series');
+    assert.equal(r.title, '2.5 Crumpled Staircase');
+    assert.equal(r.year, 2021);
+  });
+
+  it('episode_title is not echoed from a movie file title', () => {
+    assert.equal(classifyFile(_candidate('3 Fossil Geese (2009).mkv')).episode_title, null);
+  });
+
+  it('episode_title is not echoed on loose non-dated bare episodes', () => {
+    const r = classifyFile(_candidate('NIGHTOWL - 01 [1080p-HEVC][fakesite.gg].mkv', {
+      container_path: '/media1/downloads/NIGHTOWL',
+      relative_path: 'NIGHTOWL - 01 [1080p-HEVC][fakesite.gg].mkv',
+    }));
+    assert.equal(r.type, 'series');
+    assert.equal(r.episode, 1);
+    assert.equal(r.episode_title, null);
+  });
+
+  it('filler "Episode N" into-an-episode titles are dropped, not aliased', () => {
+    const r = classifyFile(_candidate('S01E01-Episode 1 [734D48EC].mkv', {
+      container_path: '/media1/downloads/Rotate Seagull S01 1080p Dual Audio BDRip 10 bits DD x265-RlsGrp',
+      relative_path: 'S01E01-Episode 1 [734D48EC].mkv',
+    }));
+    assert.equal(r.type, 'series');
+    assert.equal(r.title, 'Rotate Seagull');
+    assert.equal(r.season, 1);
+    assert.equal(r.episode, 1);
+    assert.equal(r.episode_title, null);
+    assert.equal(r.series_alias, null);
+  });
+
+  it('generic OP/ED extras never leak into episode_title or series_alias', () => {
+    for (const name of ['[RlsGrp] Fogwell - OP [BD.1080p.AV1].mkv', '[RlsGrp] Fogwell - ED [BD.1080p.AV1].mkv']) {
+      const r = classifyFile(_candidate(name, {
+        container_path: '/media1/downloads/[RlsGrp] Fogwell [BD.1080p.AV1]',
+        relative_path: name,
+      }));
+      assert.equal(r.type, 'extra', name);
+      assert.equal(r.extra_type, 'special', name);
+      assert.equal(r.title, 'Fogwell', name);
+      assert.equal(r.episode_title, null, name);
+      assert.equal(r.series_alias, null, name);
+    }
   });
 
   it('folder underscore numeric junk does not override clean title', () => {
@@ -404,7 +486,7 @@ describe('classifyFile — titles and aliases', () => {
     );
     assert.equal(r.type, 'series');
     assert.equal(r.title, 'Midnight Cat Pale Cat');
-    assert.equal(r.episode_title, 'Midnight Cat Pale Cat');
+    assert.equal(r.episode_title, null);
     assert.equal(r.episode, 5);
   });
 
@@ -558,6 +640,13 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const CORPUS_PATH = join(HERE, '..', 'scratch', 'corpus.json');
 const CORPUS = existsSync(CORPUS_PATH) ? JSON.parse(readFileSync(CORPUS_PATH, 'utf8')) : null;
 
+// Per-field ground truth (user-maintained, hand-written): scratch/corpus.expect.json
+// maps each corpus candidate name → the exact field values it MUST produce. The
+// corpus compliance test below asserts every key present in the expect block.
+const EXPECT_PATH = join(HERE, '..', 'scratch', 'corpus.expect.json');
+const EXPECT = existsSync(EXPECT_PATH) ? JSON.parse(readFileSync(EXPECT_PATH, 'utf8')) : null;
+const EXPECT_BY_NAME = EXPECT ? new Map(EXPECT.candidates.map((x) => [x.name, x.expect])) : null;
+
 const RELEASE_JUNK_TOKENS = [
   '1080p', '720p', '2160p', 'x265', 'hevc', 'x264', 'av1',
   'flac', 'eac3', 'aac', 'opus', 'ddp', 'dual-audio', 'dual audio',
@@ -597,6 +686,37 @@ describe('classifyFile — corpus regression', { skip: CORPUS ? false : 'scratch
       }
     }
     assert.deepEqual(failures, [], 'corpus classification regressions:\n' + failures.slice(0, 50).join('\n'));
+  });
+
+  it('corpus expectations match exactly (per-field ground truth)', () => {
+    assert.ok(EXPECT, 'scratch/corpus.expect.json not present (run with expectations scaffolded)');
+    const mismatches = [];
+    let checked = 0;
+    for (const entry of CORPUS.candidates) {
+      const expect = EXPECT_BY_NAME.get(entry.name);
+      if (!expect) continue; // unmapped rows are tolerated; the scaffold counts them separately
+      checked += 1;
+      const r = classifyFile(_candidate(entry.name, {
+        container_path: entry.container_path ?? null,
+        relative_path: entry.relative_path ?? null,
+        file_size: entry.file_size ?? null,
+      }));
+      for (const key of Object.keys(expect)) {
+        let actual = r[key];
+        let truth = expect[key];
+        if (typeof actual === 'number' && typeof truth === 'string' && /^\d+(?:\.\d+)?$/.test(truth)) truth = Number(truth);
+        if (typeof truth === 'number' && typeof actual === 'string' && actual !== null && /^\d+(?:\.\d+)?$/.test(actual)) actual = Number(actual);
+        if (actual !== truth) {
+          mismatches.push(`${entry.name} :: ${key}: engine=${JSON.stringify(actual)} truth=${JSON.stringify(truth)}`);
+        }
+      }
+    }
+    assert.ok(checked > 0, 'no corpus entries were mapped to expectations');
+    assert.deepEqual(
+      mismatches,
+      [],
+      `corpus per-field mismatches (${mismatches.length}/${checked}):\n` + mismatches.slice(0, 80).join('\n'),
+    );
   });
 
   it('underscore-junk season folders resolve to one title per container', () => {

@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "guessit-next"
+version = "0.1.0"
+description = "Python client for the guessit-next media-name classification daemon"
+requires-python = ">=3.10"
+license = { text = "ISC" }
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["guessit_next*"]
