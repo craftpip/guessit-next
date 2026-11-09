@@ -27,8 +27,8 @@
 //  tracked and reported, never asserted: an honest "this name has two defensible
 //  answers" must not turn the suite red, and a missing label must not either.
 //
-//  Both inputs live in the private, gitignored scratch/ submodule and are never
-//  committed. Absent either, the suite skips. Everything printed here is masked:
+//  Both inputs live in the private scratch/ submodule, never in this repo.
+//  Absent either, the suite skips. Everything printed here is masked:
 //  real titles never reach logs or CI.
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
@@ -60,7 +60,7 @@ const CATEGORIZE_FIELDS = [
 
 const SKIP = GT && CORPUS
   ? false
-  : 'scratch/gt/ground-truth.json or scratch/corpus-torrents.json not present (private, never committed)';
+  : 'scratch/gt/ground-truth.json or scratch/corpus-torrents.json not present (private scratch/ submodule not checked out)';
 
 // The ground truth stores opaque KEYS, never names. Keys are re-derived here
 // from the corpus with the same rule the sharder used (sha1 of

@@ -264,7 +264,7 @@ cd clients/python && python3 -m unittest discover -s tests -t .   # Python side
 - `tests/se.test.js` — the S/E extraction registry (ranges preserved,
   codec/resolution traps).
 - `tests/classifyFile.test.js` — per-file classification units plus the
-  shared corpus regression (`scratch/corpus.json` — user-maintained, never committed):
+  shared corpus regression (`scratch/corpus.json` — user-maintained, in the private `scratch/` submodule):
   titles must stay free of release junk (`1080p`, `x265`, group tags,
   brackets).
 - `tests/classifyBatch.test.js` — folder-aware batch classification:
@@ -294,7 +294,7 @@ src/
   index.js            public API: categorize, classifyFile, extractSE
 bin/index.js          CLI: --json <name> | --batch | --serve (stdio JSON-lines)
 clients/python/       shipped Python wrapper + daemon tests (stdlib only)
-scratch/corpus.json   user-maintained regression corpus (never committed)
+scratch/               private submodule: corpora + ground truth (real names, never in this repo)
 tests/                categorize, se, classifyFile, cli (JSON contract)
 plans/                this project's plans
 ```

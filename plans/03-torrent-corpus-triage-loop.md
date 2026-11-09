@@ -4,7 +4,7 @@
 
 The private harvest is done and the corpus files are ready:
 
-- `scratch/corpus-torrents.json` is the canonical, gitignored, user-maintained
+- `scratch/corpus-torrents.json` is the canonical, user-maintained (private submodule)
   corpus: **2,447 torrents, 163,785 inner files**, sorted deterministically
   (single-file torrents first, then file-count desc, then name), so the array
   ordinal is a stable line number.

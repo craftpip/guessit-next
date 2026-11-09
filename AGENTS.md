@@ -46,7 +46,8 @@ ranking/matrix/coverage, jellysort resolver/scan/move) stays in its project.
 - `src/titles.js`: title extraction from file+folder names [jellysort `titles.py`]
 - `src/index.js`: public API (`categorize`, `classifyFile`, `extractSE`)
 - `bin/index.js`: CLI `--json | --batch | --serve`
-- `fixtures/corpus.json`: shared regression corpus (obfuscated)
+- `scratch/`: private submodule (`craftpip/guessit-next-tests`) holding the corpora
+  and ground truth; tests read it from disk and skip when absent
 - `tests/`: categorize (jellyjake registry), se, classifyFile (jellysort genes),
   cli (JSON contract)
 - `plans/`: this project's plans
@@ -73,9 +74,9 @@ user instruction first.
 
 ### Obfuscate real media names
 
-Real series/movie titles and release groups never appear in code, fixtures, commits,
-or logs. Use neutral placeholders (`Show Name`, `[RlsGrp]`, `Movie (2020)`). The
-corpus (`fixtures/corpus.json`) must keep identical formatting tokens (`SxxEyy`, `v2`,
+Real series/movie titles and release groups never appear in this repo’s code, commits,
+or logs; they live only in the private `scratch/` submodule. Use neutral placeholders (`Show Name`, `[RlsGrp]`, `Movie (2020)`). Obfuscated
+genes in `tests/` must keep identical formatting tokens (`SxxEyy`, `v2`,
 `REPACK`, years, resolution/codec strings, episode-per-folder counts) so behavior is
 unchanged, but all real names are randomized. Never commit a reverse mapping.
 

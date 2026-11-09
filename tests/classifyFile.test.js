@@ -632,7 +632,7 @@ describe('classifyFile — classifier never emits skip', () => {
 // ── shared corpus regression ─────────────────────────────────────────────
 // Reads the user's personally-maintained corpus at scratch/corpus.json
 // (seeded verbatim from jellysort tests/corpus/download_paths.json, already
-// obfuscated there). scratch/ is gitignored and NEVER committed — the user
+// obfuscated there). scratch/ is a private submodule, never part of this repo — the user
 // adds to it; the suite simply refers to it. If absent (fresh checkout),
 // this block skips instead of failing.
 
@@ -660,7 +660,7 @@ function releaseJunk(text) {
   return RELEASE_JUNK_TOKENS.filter((t) => lowered.includes(t));
 }
 
-describe('classifyFile — corpus regression', { skip: CORPUS ? false : 'scratch/corpus.json not present (user-maintained, never committed)' }, () => {
+describe('classifyFile — corpus regression', { skip: CORPUS ? false : 'scratch/corpus.json not present (private scratch/ submodule not checked out)' }, () => {
   it('corpus fixture is non-empty', () => {
     assert.ok(CORPUS.candidates.length > 0, 'corpus fixture must not be empty');
   });

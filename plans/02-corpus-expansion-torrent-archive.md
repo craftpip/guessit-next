@@ -3,9 +3,9 @@
 ## Corpus location fix (user directive — overrides any line below that still says `fixtures/`)
 
 The corpus (test-case file/folder names) lives in the scratch folder:
-`scratch/corpus.json`. The user personally maintains and extends it; nothing
-under `scratch/` is ever committed (`.gitignore` covers `scratch/*` except
-`.keep` markers). Test files simply REFER to the scratch path and skip if it
+`scratch/corpus.json`. The user personally maintains and extends it; `scratch/`
+is a private submodule (`craftpip/guessit-next-tests`), so its contents are
+never committed to this public repo — only the submodule pointer is. Test files simply REFER to the scratch path and skip if it
 is absent (fresh checkout). There is no committed `fixtures/` copy. Obfuscated
 genes that prove a new shape still land in `tests/*.test.js` as usual.
 
