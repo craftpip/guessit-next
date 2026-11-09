@@ -148,7 +148,32 @@ Query-oriented S/E extraction (episode/movie search). Ranges preserved.
 | Consumer | Language | How it consumes |
 |----------|----------|-----------------|
 | jellyjake | Node.js | `import { categorize } from 'guessit-next'` (in-process; `queryBuilder.js` keeps only ranking/matrix logic on top) |
-| jellysort | Python | spawns `node guessit-next/bin/index.js --serve --json` once per scan; JSON-lines request/response; `app/classification/` becomes (or is replaced by) a thin client. Any response shape change is caught by cli.test.js |
+| jellysort | Python | via the shipped wrapper (`clients/python/` — `GuessitNext` spawns the classifier once per scan, JSON-lines request/response; see Distribution below for binary-vs-node); `app/classification/` becomes (or is replaced by) a thin client. Any response shape change is caught by cli.test.js |
+
+## Distribution — Node SEA single binary (locked decision)
+
+No rewrite in Rust/Go: both lack look-around regex (Rust `regex`, Go RE2),
+which the guard catalog is built on — a port would re-engineer the
+highest-risk layer for zero behavioral gain.
+
+Instead the Python consumer gets a **Single Executable Application**: the
+same JS (same engine, same regex semantics — all locked-in patterns carry
+over untouched) baked with the Node runtime into one `guessit-next` binary.
+Python spawns `./guessit-next --serve --json` exactly as it would spawn
+`node bin/index.js --serve --json` — **no Node install in the Python image**.
+The stdio JSON-lines protocol is identical either way, so all daemon work
+now (ops, contract tests, Python wrapper) is not wasted regardless of which
+end of the pipe runs.
+
+- Build (per OS/arch, in Dockerfile/CI): bundle `src/`+`bin/` (zero-dep ESM)
+  → `node --experimental-sea-config` blob → `postject` inject into a copy of
+  `node`. Available on our Node 20.
+- `GuessitNext` gains a small `runtime`-vs-`binary` spawn option at that time
+  (paths are already parameters today).
+- Timing: packaging work, Phase 3 territory. Until then the daemon runs on a
+  `node` binary with byte-identical behavior.
+- Cost notes: binary is tens of MB (embeds V8 — irrelevant in images) and
+  platform-specific (fine — both consumers are Docker on the same arch).
 
 ## Phase plan
 
@@ -315,8 +340,9 @@ small movie-size file with NO `sample` marker stays `movie` with a
 - `--json-file '<path>'` → `classifyFile` one library file (parent folders from
   the path participate; `--root` overrides the scan root).
 - `--batch` → stdin JSON-lines of `{ op, ... }`, one JSON result per line:
-  `{ op: "categorize", name }`, `{ op: "classifyFile", candidate }`,
-  `{ op: "classifyFiles", candidates }`.
+  `{ op: "categorize", name }`, `{ op: "extractSE", name }`,
+  `{ op: "classifyFile", candidate }`, `{ op: "classifyFiles", candidates }`
+  (op names match the JS function names 1:1).
 - `--serve [--json]` → stdio daemon (one process per scan): same ops as
   `--batch`, looped until EOF. This is the Python consumer's interface.
 
